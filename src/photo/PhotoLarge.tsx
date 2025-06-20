@@ -196,7 +196,7 @@ export default function PhotoLarge({
   // (portrait photos are always height restricted)
   const matteContentWidthForAspectRatio =
     photo.aspectRatio > 3 / 2 + 0.1
-      ? 'w-[90%]'
+      ? 'sm:w-[90%]'
       : undefined;
 
   const renderLargePhoto =
@@ -204,7 +204,7 @@ export default function PhotoLarge({
       'relative',
       arePhotosMatted && 'flex items-center justify-center',
       // Always specify height to ensure fallback doesn't collapse
-      arePhotosMatted && 'h-[90%]',
+      arePhotosMatted && 'sm:h-[90%]',
       arePhotosMatted && matteContentWidthForAspectRatio,
     )}>
       <ZoomControls
