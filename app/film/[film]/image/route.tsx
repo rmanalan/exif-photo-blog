@@ -44,7 +44,7 @@ export async function GET(
 
   return new ImageResponse(
     <FilmImageResponse {...{
-      film,
+      film: filmParam,
       photos,
       width,
       height,
