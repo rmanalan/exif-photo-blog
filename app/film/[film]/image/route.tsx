@@ -15,7 +15,9 @@ export const generateStaticParams = staticallyGenerateCategoryIfConfigured(
   'films',
   'image',
   getUniqueFilms,
-  films => films.map(({ film }) => ({ film })),
+  films => films.map(({ film }) => { 
+    return { film: decodeURIComponent(film) }; 
+  }),
 );
 
 export async function GET(
