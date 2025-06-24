@@ -78,6 +78,7 @@ export default function PhotoLarge({
   includeFavoriteInAdminMenu,
   onVisible,
   showAdminKeyCommands,
+  isMainPhoto,
 }: {
   photo: Photo
   className?: string
@@ -104,6 +105,7 @@ export default function PhotoLarge({
   includeFavoriteInAdminMenu?: boolean
   onVisible?: () => void
   showAdminKeyCommands?: boolean
+  isMainPhoto?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const refZoomControls = useRef<ZoomControlsRef>(null);
@@ -196,18 +198,18 @@ export default function PhotoLarge({
   // (portrait photos are always height restricted)
   const matteContentWidthForAspectRatio =
     photo.aspectRatio > 3 / 2 + 0.1
-      ? 'w-[90%]'
-      : photo.aspectRatio >= 1
-        ? 'w-[80%]'
+      ? 'w-full'
+      : photo.aspectRatio > 1
+        ? 'w-full !h-auto'
         : undefined;
 
   const renderLargePhoto =
     <div className={clsx(
       'relative',
-      arePhotosMatted && 'flex items-center justify-center',
+      (arePhotosMatted || isMainPhoto)  && 'flex items-center justify-center',
       // Always specify height to ensure fallback doesn't collapse
-      arePhotosMatted && 'h-[90%]',
-      arePhotosMatted && matteContentWidthForAspectRatio,
+      (arePhotosMatted || isMainPhoto) && 'h-full',
+      (arePhotosMatted || isMainPhoto) && matteContentWidthForAspectRatio,
     )}>
       <ZoomControls
         ref={refZoomControls}
@@ -215,8 +217,8 @@ export default function PhotoLarge({
         {...{ isEnabled: showZoomControls, shouldZoomOnFKeydown }}
       >
         <ImageLarge
-          className={clsx(arePhotosMatted && 'h-full')}
-          classNameImage={clsx(arePhotosMatted &&
+          className={clsx((arePhotosMatted || isMainPhoto) && 'h-full')}
+          classNameImage={clsx((arePhotosMatted || isMainPhoto) &&
             'object-contain w-full h-full')}
           alt={altTextForPhoto(photo)}
           src={photo.url}
@@ -261,12 +263,12 @@ export default function PhotoLarge({
     }} />;
 
   const largePhotoContainerClassName = clsx(
-    arePhotosMatted && 'flex items-center justify-center aspect-3/2',
+    (arePhotosMatted || isMainPhoto) && 'flex items-center justify-center aspect-3/2',
     // Matte theme colors defined in root layout
-    arePhotosMatted && (MATTE_COLOR
+    (arePhotosMatted || isMainPhoto) && (MATTE_COLOR
       ? 'bg-(--matte-bg)'
       : 'bg-gray-100'),
-    arePhotosMatted && (MATTE_COLOR_DARK
+    (arePhotosMatted || isMainPhoto) && (MATTE_COLOR_DARK
       ? 'dark:bg-(--matte-bg-dark)'
       // Only specify dark background when MATTE_COLOR is not configured
       : !MATTE_COLOR && 'dark:bg-gray-700/30'),
