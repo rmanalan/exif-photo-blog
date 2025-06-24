@@ -24,9 +24,9 @@ export default function ZoomControls({
 
   const {
     open,
-    reset,
     zoomTo,
-    zoomLevel,
+    toggleFullscreen,
+    isFullscreen,
     refViewerContainer,
   } = useImageZoomControls({
     refImageContainer,
@@ -37,9 +37,7 @@ export default function ZoomControls({
     if (ref) { ref.current = { open, zoomTo }; }
   }, [ref, open, zoomTo]);
 
-  const shouldZoomTo2x = zoomLevel !== 2;
-
-  const button = 
+  const button =
     <button
       className={clsx(
         'fixed top-[20px] right-[70px]',
@@ -47,11 +45,12 @@ export default function ZoomControls({
         'rounded-full border-none',
         'text-white bg-black/50 hover:bg-black/85',
       )}
-      onClick={() => shouldZoomTo2x ? zoomTo(2) : reset()}
+      onClick={toggleFullscreen}
     >
-      {shouldZoomTo2x
+      {isFullscreen
         ? <RiCollapseDiagonalLine className="shrink-0" size={20} />
-        : <RiExpandDiagonalLine className="shrink-0" size={20} />}
+        : <RiExpandDiagonalLine className="shrink-0" size={20} />
+      }
     </button>;
 
   return (

@@ -18,6 +18,7 @@ export default function useImageZoomControls({
 } : {
   refImageContainer: RefObject<HTMLElement | null>
 } & Omit<ComponentProps<typeof ZoomControls>, 'ref' | 'children'>) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const viewerRef = useRef<Viewer | null>(null);
 
   const refViewerContainer = useRef<HTMLDivElement>(null);
@@ -44,6 +45,19 @@ export default function useImageZoomControls({
     viewerRef.current?.reset();
   }, []);
 
+  const toggleFullscreen = useCallback(() => {
+    if (isFullscreen) {
+      reset();
+      // exit browser fullscreen
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    } else {
+      viewerRef.current?.play(true);
+      setIsFullscreen(true);
+    }
+  }, [isFullscreen, reset]);
+
+
   useEffect(() => {
     if (isEnabled) {
       const imageRef = (
@@ -69,7 +83,7 @@ export default function useImageZoomControls({
             return image.src;
           },
           show: () => {
-            setShouldRespondToKeyboardCommands?.(false);
+            setShouldRespondToKeyboardCommands?.(true);
             setColorLight('#000');
           },
           hide: () => {
@@ -101,6 +115,8 @@ export default function useImageZoomControls({
     close,
     reset,
     zoomTo,
+    toggleFullscreen,
+    isFullscreen,
     zoomLevel,
     refViewerContainer,
   };
