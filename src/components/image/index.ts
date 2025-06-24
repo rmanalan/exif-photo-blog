@@ -6,7 +6,7 @@ export const IMAGE_WIDTH_SMALL = 50;
 // Height determined by intrinsic photo aspect ratio
 export const IMAGE_WIDTH_MEDIUM = 300;
 // Height determined by intrinsic photo aspect ratio
-export const IMAGE_WIDTH_LARGE = 1200;
+export const IMAGE_WIDTH_LARGE = 1024;
 
 export type CustomImageProps = Omit<
   ComponentProps<typeof ImageWithFallback>,
