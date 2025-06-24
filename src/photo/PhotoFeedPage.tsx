@@ -13,7 +13,7 @@ export default function PhotoFeedPage({
   photosCount: number
 }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-4 lg:space-y-6">
       <PhotosLarge {...{ photos }} />
       {photosCount > photos.length &&
         <PhotosLargeInfinite

@@ -40,9 +40,9 @@ export default function AppGrid({
         'grid-cols-1 md:grid-cols-12',
         'gap-x-4 lg:gap-x-6',
         'gap-y-4',
-        'max-w-[1280px] 3xl:w-[1280px]',
+        'max-w-full xl:max-w-10/12',
         // Offset sidebar width when centering on large screens
-        '3xl:translate-x-[163px]',
+        'xl:translate-x-2/12',
         className,
       )}
     >

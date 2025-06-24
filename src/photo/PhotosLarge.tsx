@@ -18,7 +18,7 @@ export default function PhotosLarge({
 }) {
   return (
     <AnimateItems
-      className="space-y-1"
+      className="space-y-4 lg:space-y-6"
       type={animate ? 'scale' : 'none'}
       duration={0.7}
       staggerDelay={0.15}
