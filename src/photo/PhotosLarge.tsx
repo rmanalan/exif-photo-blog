@@ -32,6 +32,7 @@ export default function PhotosLarge({
           prefetchRelatedLinks={prefetchFirstPhotoLinks && index === 0}
           revalidatePhoto={revalidatePhoto}
           shouldZoomOnFKeydown={false}
+          showZoomControls={false}
           onVisible={index === photos.length - 1
             ? onLastPhotoVisible
             : undefined}
