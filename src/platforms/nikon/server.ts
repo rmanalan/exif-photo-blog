@@ -54,7 +54,7 @@ export const getNikonPictureControlName = (
         name &&
         name.length > 0 &&
         name.length <= 20 &&
-        /^[A-Za-z0-9_\s\-&]+$/.test(name) &&
+        /^[A-Za-z0-9_\s\-&\/]+$/.test(name) &&
         !/^\d{4}$/.test(name)
       ) {
         return formatPictureControlName(name);
@@ -74,7 +74,7 @@ export const getNikonPictureControlName = (
         name &&
         name.length > 0 &&
         name.length <= 20 &&
-        /^[A-Za-z0-9_\s\-&]+$/.test(name) &&
+        /^[A-Za-z0-9_\s\-&\/]+$/.test(name) &&
         !/^\d{4}$/.test(name)
       ) {
         return formatPictureControlName(name);
