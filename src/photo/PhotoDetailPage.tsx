@@ -153,7 +153,7 @@ export default function PhotoDetailPage({
           selectedPhoto={photo}
           tag={tag}
           camera={camera}
-          film={film}
+          film={film ? encodeURIComponent(film) : undefined}
           focal={focal}
           animateOnFirstLoadOnly
         />}
