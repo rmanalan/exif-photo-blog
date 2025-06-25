@@ -36,7 +36,7 @@ export default function FilmHeader({
 
   return (
     <PhotoHeader
-      film={film}
+      film={encodeURIComponent(film)}
       entity={<PhotoFilm
         film={decodeURIComponent(film)}
         isShowingRecipeOverlay={Boolean(recipeModalProps)}
