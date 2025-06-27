@@ -10,103 +10,33 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export default function ImageWithFallback({
   className,
   classNameImage = 'object-cover h-full',
-  debug,
-  priority,
   blurDataURL,
   blurCompatibilityLevel = 'low',
   ...props
 }: ImageProps & {
   blurCompatibilityLevel?: 'none' | 'low' | 'high'
   classNameImage?: string
-  debug?: boolean
 }) {
-  const {
-    shouldDebugImageFallbacks,
-    areAdminDebugToolsEnabled,
-  } = useAppState();
+  const { shouldDebugImageFallbacks } = useAppState();
 
-  const [wasCached, setWasCached] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [didError, setDidError] = useState(false);
+  const [fadeFallbackTransition, setFadeFallbackTransition] = useState(false);
 
   const onLoad = useCallback(() => setIsLoading(false), []);
   const onError = useCallback(() => setDidError(true), []);
 
-  const [hideFallback, setHideFallback] = useState(false);
-
-  const refImage = useRef<HTMLImageElement>(null);
-  const refFallback = useRef<HTMLDivElement>(null);
-
+  const isLoadingRef = useRef(isLoading);
+  useEffect(() => { isLoadingRef.current = isLoading; }, [isLoading]);
   useEffect(() => {
-    setWasCached(
-      Boolean(refImage.current?.complete) &&
-      (refImage.current?.naturalWidth ?? 0) > 0,
-    );
+    const timeout = setTimeout(() => {
+      // If image is still loading after 200ms, force CSS animation
+      if (isLoadingRef.current) {
+        setFadeFallbackTransition(true);
+      }
+    }, 200);
+    return () => clearTimeout(timeout);
   }, []);
-
-  const shouldDebugFallback = areAdminDebugToolsEnabled && debug;
-
-  const debugFallbackStyles = useCallback(() => {
-    const stylesMap = refFallback.current?.computedStyleMap();
-    const styles = stylesMap
-      ? Array.from(stylesMap.entries()).reduce((acc, [key, value]) => {
-        acc[key] = value.toString();
-        return acc;
-      }, {} as Record<string, string>) : {};
-    const opacity = (stylesMap?.get('opacity') as CSSUnitValue)?.value;
-    return {
-      styles,
-      opacity,
-      classList: refFallback.current?.classList,
-    };
-  }, []);
-
-  const outerTimeout = useRef<NodeJS.Timeout>(undefined);
-  const innerTimeout = useRef<NodeJS.Timeout>(undefined);
-  useEffect(() => {
-    if (!isLoading && !didError) {
-      outerTimeout.current = setTimeout(() => {
-        if (refFallback.current) {
-          const fallbackOpacity = (refFallback
-            .current
-            .computedStyleMap()
-            .get('opacity') as CSSUnitValue
-          )?.value;
-          // Address race condition where cached image is initially loaded
-          // and fallback is still being shown at full opacity
-          if (fallbackOpacity === 0) {
-            // Image has loaded and fallback is already hidden
-            setHideFallback(true);
-            if (shouldDebugFallback) {
-              console.log('Hide fallback: 01', debugFallbackStyles());
-            }
-          } else {
-            // Image has loaded but fallback is still visible
-            // Delay hiding fallback to avoid abrupt transition
-            innerTimeout.current = setTimeout(() =>{
-              setHideFallback(true);
-              if (shouldDebugFallback) {
-                console.log('Hide fallback: 02', debugFallbackStyles());
-              }
-            }, 1000);
-          }
-        }
-      }, 1000);
-      return () => {
-        clearTimeout(outerTimeout.current);
-        clearTimeout(innerTimeout.current);
-      };
-    }
-  }, [
-    isLoading,
-    didError,
-    shouldDebugFallback,
-    debugFallbackStyles,
-  ]);
-
-  const showFallback =
-    !wasCached &&
-    !hideFallback;
 
   const getBlurClass = () => {
     switch (blurCompatibilityLevel) {
@@ -127,22 +57,19 @@ export default function ImageWithFallback({
     >
       <Image {...{
         ...props,
-        ref: refImage,
-        priority,
         className: classNameImage,
         onLoad,
         onError,
       }} />
       <div
-        ref={refFallback}
         className={clsx(
           '@container',
           'absolute inset-0 pointer-events-none',
           'overflow-hidden',
-          (showFallback || shouldDebugImageFallbacks) &&
+          fadeFallbackTransition &&
             'transition-opacity duration-300 ease-in',
           !(BLUR_ENABLED && blurDataURL) && 'bg-main',
-          (isLoading || shouldDebugImageFallbacks)
+          (isLoading || didError || shouldDebugImageFallbacks)
             ? 'opacity-100'
             : 'opacity-0',
         )}

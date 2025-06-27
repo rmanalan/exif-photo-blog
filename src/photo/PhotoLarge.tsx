@@ -79,7 +79,6 @@ export default function PhotoLarge({
   onVisible,
   showAdminKeyCommands,
   isMainPhoto,
-  debugImageFallback,
 }: {
   photo: Photo
   className?: string
@@ -107,7 +106,6 @@ export default function PhotoLarge({
   onVisible?: () => void
   showAdminKeyCommands?: boolean
   isMainPhoto?: boolean
-  debugImageFallback?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const refZoomControls = useRef<ZoomControlsRef>(null);
@@ -228,7 +226,6 @@ export default function PhotoLarge({
           blurDataURL={photo.blurData}
           blurCompatibilityMode={doesPhotoNeedBlurCompatibility(photo)}
           priority={priority}
-          debug={debugImageFallback}
         />
       </ZoomControls>
       <div className={clsx(
