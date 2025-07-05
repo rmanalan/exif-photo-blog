@@ -18,6 +18,7 @@
 html {
   /* Necessary for nextjs scroll restoration */
   min-height: 100%;
+  overscroll-behavior-x: none;
 }
 
 @theme {
