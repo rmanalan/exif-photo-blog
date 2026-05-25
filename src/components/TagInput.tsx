@@ -28,7 +28,6 @@ export default function TagInput({
   accessory,
   onChange,
   onInputTextChange,
-  showMenuOnDelete,
   className,
   readOnly,
   placeholder,
@@ -41,13 +40,12 @@ export default function TagInput({
   name: string
   value?: string
   options?: AnnotatedTag[]
-  labelForValueOverride?: (value: string) => string
+  labelForValueOverride?: (value: string) => string | undefined
   defaultIcon?: ReactNode
   defaultIconSelected?: ReactNode
   accessory?: ReactNode
   onChange?: (value: string) => void
   onInputTextChange?: (value: string) => void
-  showMenuOnDelete?: boolean
   className?: string
   readOnly?: boolean
   placeholder?: string
@@ -56,7 +54,7 @@ export default function TagInput({
   allowNewValues?: boolean
   shouldParameterize?: boolean
 }) {
-  const behaveAsDropdown = limit === 1;
+  const behavesAsDropdown = limit === 1;
 
   const containerRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,14 +69,14 @@ export default function TagInput({
   , [options]);
 
   const selectedOptions = useMemo(() =>
-    convertStringToArray(value, shouldParameterize) ?? []
+    convertStringToArray(value, shouldParameterize)
   , [value, shouldParameterize]);
 
   const hasReachedLimit = useMemo(() =>
     limit !== undefined &&
     selectedOptions.length >= limit &&
-    !behaveAsDropdown
-  , [limit, behaveAsDropdown, selectedOptions]);
+    !behavesAsDropdown
+  , [limit, behavesAsDropdown, selectedOptions]);
 
   const inputTextFormatted = shouldParameterize
     ? parameterize(inputText)
@@ -150,7 +148,7 @@ export default function TagInput({
       .filter(option => !selectedOptions.includes(option));
 
     if (optionsToAdd.length > 0) {
-      if (behaveAsDropdown) {
+      if (behavesAsDropdown) {
         // If behaving as dropdown, replace contents on add
         onChange?.(optionsToAdd[0]);
       } else {
@@ -165,7 +163,7 @@ export default function TagInput({
     setInputText('');
 
     if (
-      behaveAsDropdown ||
+      behavesAsDropdown ||
       (limit !== undefined && limit - 1 >= selectedOptions.length)
     ) {
       hideMenu(true);
@@ -174,7 +172,7 @@ export default function TagInput({
     }
   }, [
     limit,
-    behaveAsDropdown,
+    behavesAsDropdown,
     selectedOptions,
     shouldParameterize,
     onChange,
@@ -192,14 +190,14 @@ export default function TagInput({
   // Show options when input text changes
   useEffect(() => {
     if (inputText) {
-      if (inputText.includes(',')) {
+      if (inputText.includes(',') && !behavesAsDropdown) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         addOptions(inputText.split(','));
       } else {
         setShouldShowMenu(true);
       }
     }
-  }, [inputText, addOptions, selectedOptions]);
+  }, [inputText, behavesAsDropdown, addOptions, selectedOptions]);
 
   // Focus option in the DOM when selected index changes
   useEffect(() => {
@@ -271,7 +269,7 @@ export default function TagInput({
         case 'Backspace':
           if (inputText === '' && selectedOptions.length > 0) {
             removeOption(selectedOptions[selectedOptions.length - 1]);
-            if (!showMenuOnDelete) { hideMenu(); }
+            if (!behavesAsDropdown) { hideMenu(); }
           }
           break;
         case 'Escape':
@@ -286,7 +284,7 @@ export default function TagInput({
   }, [
     inputText,
     removeOption,
-    showMenuOnDelete,
+    behavesAsDropdown,
     hideMenu,
     selectedOptions,
     selectedOptionIndex,
@@ -416,7 +414,7 @@ export default function TagInput({
           <div
             className={clsx(
               'component-surface',
-              'absolute top-3 w-full px-1.5 py-1.5',
+              'absolute top-3 w-full px-1.5 py-1.5 -mx-px',
               'max-h-[8rem] overflow-y-auto flex flex-col',
               'shadow-lg dark:shadow-xl',
             )}

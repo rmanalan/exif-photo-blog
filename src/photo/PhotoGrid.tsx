@@ -5,17 +5,20 @@ import { PhotoSetCategory } from '../category';
 import PhotoMedium from './PhotoMedium';
 import { clsx } from 'clsx/lite';
 import AnimateItems from '@/components/AnimateItems';
-import { GRID_ASPECT_RATIO } from '@/app/config';
+import {
+  GRID_ASPECT_RATIO,
+  MASONRY_GRID_ENABLED,
+} from '@/app/config';
 import { useAppState } from '@/app/AppState';
 import SelectTileOverlay from '@/components/SelectTileOverlay';
 import { ReactNode } from 'react';
 import { GRID_GAP_CLASSNAME } from '@/components';
 import { useSelectPhotosState } from '@/admin/select/SelectPhotosState';
 import { DATA_KEY_PHOTO_GRID } from '@/admin/select/SelectPhotosProvider';
+import PhotoGridMasonry from './PhotoGridMasonry';
 
 export default function PhotoGrid({
   photos,
-  selectedPhoto,
   prioritizeInitialPhotos,
   className,
   classNamePhoto,
@@ -31,7 +34,6 @@ export default function PhotoGrid({
   ...categories
 }: {
   photos: Photo[]
-  selectedPhoto?: Photo
   prioritizeInitialPhotos?: boolean
   className?: string
   classNamePhoto?: string
@@ -51,9 +53,80 @@ export default function PhotoGrid({
 
   const {
     isSelectingPhotos,
+    isSelectingAllPhotos,
     selectedPhotoIds,
-    setSelectedPhotoIds,
+    togglePhotoSelection,
   } = useSelectPhotosState();
+
+  const photoNodes = photos.map((photo, index) => {
+    const isSelected = (
+      selectedPhotoIds?.includes(photo.id) ||
+      isSelectingAllPhotos
+    ) ?? false;
+    return <div
+      key={photo.id}
+      className={clsx(
+        'flex relative overflow-hidden',
+        'group',
+      )}
+      style={{
+        ...(MASONRY_GRID_ENABLED) ? {
+          aspectRatio: photo.aspectRatio,
+        } : (GRID_ASPECT_RATIO !== 0) ? {
+          aspectRatio: GRID_ASPECT_RATIO,
+        } : {},
+      }}
+    >
+      <PhotoMedium
+        className={clsx(
+          'flex w-full h-full',
+          // Prevent photo navigation when selecting
+          isSelectingPhotos && 'pointer-events-none',
+          classNamePhoto,
+        )}
+        {...{
+          photo,
+          ...categories,
+          selected: isSelected,
+          // More priority slots when masonry is on (helps LCP)
+          priority: prioritizeInitialPhotos
+            ? (MASONRY_GRID_ENABLED ? index < 36 : index < 6)
+            : undefined,
+          onVisible: index === photos.length - 1
+            ? onLastPhotoVisible
+            : undefined,
+        }}
+      />
+      {isSelectingPhotos &&
+        <SelectTileOverlay
+          isSelected={isSelected}
+          onSelectChange={() => togglePhotoSelection?.(photo.id)}
+        />}
+    </div>;
+  });
+
+  const allItems = photoNodes.concat(
+    additionalTile ? [<div key="more">{additionalTile}</div>] : [],
+  );
+
+  if (MASONRY_GRID_ENABLED) {
+    return (
+      <PhotoGridMasonry
+        photos={photos}
+        photoNodes={photoNodes}
+        additionalTile={additionalTile}
+        small={small}
+        isGridHighDensity={isGridHighDensity}
+        selectable={selectable}
+        className={className}
+        animate={animate}
+        canStart={canStart}
+        animateOnFirstLoadOnly={animateOnFirstLoadOnly}
+        staggerOnFirstLoadOnly={staggerOnFirstLoadOnly}
+        onAnimationCompleteAction={onAnimationComplete}
+      />
+    );
+  }
 
   return (
     <div
@@ -78,47 +151,7 @@ export default function PhotoGrid({
         animateOnFirstLoadOnly={animateOnFirstLoadOnly}
         staggerOnFirstLoadOnly={staggerOnFirstLoadOnly}
         onAnimationComplete={onAnimationComplete}
-        items={photos.map((photo, index) => {
-          const isSelected = selectedPhotoIds?.includes(photo.id) ?? false;
-          return <div
-            key={photo.id}
-            className={clsx(
-              'flex relative overflow-hidden',
-              'group',
-            )}
-            style={{
-              ...GRID_ASPECT_RATIO !== 0 && {
-                aspectRatio: GRID_ASPECT_RATIO,
-              },
-            }}
-          >
-            <PhotoMedium
-              className={clsx(
-                'flex w-full h-full',
-                // Prevent photo navigation when selecting
-                isSelectingPhotos && 'pointer-events-none',
-                classNamePhoto,
-              )}
-              {...{
-                photo,
-                ...categories,
-                selected: photo.id === selectedPhoto?.id,
-                priority: prioritizeInitialPhotos ? index < 6 : undefined,
-                onVisible: index === photos.length - 1
-                  ? onLastPhotoVisible
-                  : undefined,
-              }}
-            />
-            {isSelectingPhotos &&
-              <SelectTileOverlay
-                isSelected={isSelected}
-                onSelectChange={() => setSelectedPhotoIds?.(isSelected
-                  ? (selectedPhotoIds ?? []).filter(id => id !== photo.id)
-                  : (selectedPhotoIds ?? []).concat(photo.id),
-                )}
-              />}
-          </div>;
-        }).concat(additionalTile ? <>{additionalTile}</> : [])}
+        items={allItems}
         itemKeys={photos.map(photo => photo.id)
           .concat(additionalTile ? ['more'] : [])}
       />

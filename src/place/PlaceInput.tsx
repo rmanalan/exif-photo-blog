@@ -33,6 +33,7 @@ export default function PlaceInput({
     if (inputTextDebounced) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoadingPlaces(true);
+      console.log('getPlaceAutoCompleteAction', inputTextDebounced);
       getPlaceAutoCompleteAction(inputTextDebounced)
         .then(options => {
           options.forEach(option => {

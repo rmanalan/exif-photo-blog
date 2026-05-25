@@ -1,5 +1,5 @@
 import { Ratelimit } from '@upstash/ratelimit';
-import { redis } from './redis';
+import { getRedis } from './redis';
 
 export const checkRateLimitAndThrow = async ({
   identifier,
@@ -10,6 +10,7 @@ export const checkRateLimitAndThrow = async ({
   tokens?: number
   duration?: Parameters<typeof Ratelimit.slidingWindow>[1]
 }) => {
+  const redis = getRedis();
   if (redis) {
     const limiter = new Ratelimit({
       redis,
