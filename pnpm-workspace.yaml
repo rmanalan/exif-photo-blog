@@ -1,4 +1,9 @@
 packages: []
+overrides:
+  # next declares sharp ^0.35.3 as an optional dependency; without this
+  # its image optimizer keeps 0.35.3 even when the app pins 0.34.5, and
+  # 0.35.x fails to load its linux-x64 binary on Vercel
+  sharp: ^0.34.5
 allowBuilds:
   '@tailwindcss/oxide': true
   '@vercel/speed-insights': true
