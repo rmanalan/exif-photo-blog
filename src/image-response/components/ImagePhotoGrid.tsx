@@ -60,32 +60,39 @@ export default async function ImagePhotoGrid({
   );
 
   const renderPhoto = (
-    { id, urlData }: typeof photoUrls[number],
+    photo: typeof photoUrls[number] | undefined,
     width: number,
     height: number,
-  ) =>
-    <div
-      key={id}
-      style={{
-        display: 'flex',
-        width,
-        height,
-        overflow: 'hidden',
-        filter: 'saturate(1.1)',
-      }}
-    >
-      <img {...{
-        src: urlData,
-        style: {
-          ...imageStyle,
-          width: '100%',
-          ...imagePosition === 'center' && {
-            height: '100%',
+  ) => {
+    // `getDataUrlsForPhotos` returns an empty array if any image is
+    // unusable, so indexed access can't assume parity with `photos`
+    if (!photo) { return null; }
+    const { id, urlData } = photo;
+    return (
+      <div
+        key={id}
+        style={{
+          display: 'flex',
+          width,
+          height,
+          overflow: 'hidden',
+          filter: 'saturate(1.1)',
+        }}
+      >
+        <img {...{
+          src: urlData,
+          style: {
+            ...imageStyle,
+            width: '100%',
+            ...imagePosition === 'center' && {
+              height: '100%',
+            },
+            objectFit: 'cover',
           },
-          objectFit: 'cover',
-        },
-      }} />
-    </div>;
+        }} />
+      </div>
+    );
+  };
 
   return (
     <div

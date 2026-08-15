@@ -4,9 +4,11 @@ export const removeBase64Prefix = (base64: string) => {
   return base64.match(/^data:image\/[a-z]{3,4};base64,(.+)$/)?.[1] ?? base64;
 };
 
-// Formats `next/og` (satori) can decode. WebP and AVIF throw when rendered,
-// so they're rejected here and callers degrade rather than fail.
-const RENDERABLE_IMAGE_TYPES = ['image/jpeg', 'image/png'];
+// Formats `next/og` (satori) cannot decode—both throw when rendered, so
+// they're rejected here and callers degrade rather than fail. Kept as a
+// deny list: anything else is passed through as before, since rejecting
+// unrecognized-but-working formats loses images that render fine today.
+const UNRENDERABLE_IMAGE_TYPES = ['image/webp', 'image/avif'];
 
 // `next/image` negotiates output format from this header, so ask it for
 // something renderable instead of accepting whatever it defaults to
@@ -51,9 +53,17 @@ export const fetchBase64ImageFromUrl = async (
           getContentTypeFromMagicBytes(buffer) ??
           response.headers.get('content-type')?.split(';')[0].trim() ??
           (fileExtension === 'png' ? 'image/png' : 'image/jpeg');
-        if (!RENDERABLE_IMAGE_TYPES.includes(contentType)) { return undefined; }
+        if (UNRENDERABLE_IMAGE_TYPES.includes(contentType)) {
+          console.error(
+            `Cannot render ${contentType} in image response: ${url}`,
+          );
+          return undefined;
+        }
         return `data:${contentType};base64,${buffer.toString('base64')}`;
       } else {
+        console.error(
+          `Error fetching image (${response.status}): ${url}`,
+        );
         return undefined;
       }
     })
