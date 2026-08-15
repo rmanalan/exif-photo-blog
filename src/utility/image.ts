@@ -16,7 +16,13 @@ const RENDERABLE_IMAGE_ACCEPT = 'image/jpeg,image/png';
 
 const PNG_MAGIC_BYTES = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
+// Sniff the bytes rather than trusting headers: `next/image` urls carry no
+// file extension, and a proxied response can arrive without a usable
+// content-type, which previously let webp reach satori mislabelled as jpeg
 const getContentTypeFromMagicBytes = (buffer: Buffer) => {
+  const hasAsciiAt = (offset: number, ascii: string) =>
+    buffer.length >= offset + ascii.length &&
+    buffer.subarray(offset, offset + ascii.length).toString('latin1') === ascii;
   if (
     buffer.length >= 3 &&
     buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff
@@ -28,6 +34,15 @@ const getContentTypeFromMagicBytes = (buffer: Buffer) => {
     PNG_MAGIC_BYTES.every((byte, index) => buffer[index] === byte)
   ) {
     return 'image/png';
+  }
+  if (hasAsciiAt(0, 'RIFF') && hasAsciiAt(8, 'WEBP')) {
+    return 'image/webp';
+  }
+  if (
+    hasAsciiAt(4, 'ftyp') &&
+    (hasAsciiAt(8, 'avif') || hasAsciiAt(8, 'avis'))
+  ) {
+    return 'image/avif';
   }
   return undefined;
 };
@@ -54,6 +69,9 @@ export const fetchBase64ImageFromUrl = async (
           response.headers.get('content-type')?.split(';')[0].trim() ??
           (fileExtension === 'png' ? 'image/png' : 'image/jpeg');
         if (UNRENDERABLE_IMAGE_TYPES.includes(contentType)) {
+          // Reached when a photo's optimized variant is missing and
+          // `next/image` serves webp instead—regenerating the variant is
+          // the real fix; dropping it here keeps the build from failing
           console.error(
             `Cannot render ${contentType} in image response: ${url}`,
           );
