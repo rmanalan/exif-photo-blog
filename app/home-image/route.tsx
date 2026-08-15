@@ -7,7 +7,7 @@ import HomeImageResponse from '@/app/HomeImageResponse';
 import { getIBMPlexMono } from '@/app/font';
 import { getImageResponseCacheControlHeaders } from '@/image-response/cache';
 import { APP_OG_IMAGE_QUERY_OPTIONS } from '@/feed';
-import { ImageResponse } from 'next/og';
+import { safeImageResponse } from '@/image-response/safe';
 
 export const dynamic = 'force-static';
 
@@ -28,7 +28,7 @@ export async function GET() {
 
   const { width, height } = IMAGE_OG_DIMENSION_SMALL;
 
-  return new ImageResponse(
+  return safeImageResponse(
     <HomeImageResponse {...{
       photos,
       width,

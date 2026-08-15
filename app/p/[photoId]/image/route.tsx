@@ -4,7 +4,7 @@ import PhotoImageResponse from '@/photo/PhotoImageResponse';
 import { getIBMPlexMono } from '@/app/font';
 import { getImageResponseCacheControlHeaders } from '@/image-response/cache';
 import { staticallyGeneratePhotosIfConfigured } from '@/app/static';
-import { ImageResponse } from 'next/og';
+import { safeImageResponse } from '@/image-response/safe';
 
 export const generateStaticParams = staticallyGeneratePhotosIfConfigured(
   'image',
@@ -30,7 +30,7 @@ export async function GET(
 
   const { width, height } = IMAGE_OG_DIMENSION;
   
-  return new ImageResponse(
+  return safeImageResponse(
     <PhotoImageResponse {...{
       photo,
       width,
@@ -38,5 +38,6 @@ export async function GET(
       fontFamily,
     }} />,
     { width, height, fonts, headers },
+    `photo: ${photoId}`,
   );
 }

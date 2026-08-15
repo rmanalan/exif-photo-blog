@@ -9,7 +9,7 @@ import { getIBMPlexMono } from '@/app/font';
 import { getImageResponseCacheControlHeaders } from '@/image-response/cache';
 import { getAppText } from '@/i18n/state/server';
 import { SHOW_RECENTS } from '@/app/config';
-import { ImageResponse } from 'next/og';
+import { safeImageResponse } from '@/image-response/safe';
 
 export const dynamic = 'force-static';
 
@@ -35,7 +35,7 @@ export async function GET() {
 
   const { width, height } = IMAGE_OG_DIMENSION_SMALL;
 
-  return new ImageResponse(
+  return safeImageResponse(
     <RecentsImageResponse {...{
       title,
       photos,

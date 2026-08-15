@@ -7,7 +7,7 @@ import TemplateImageResponse from
   '@/app/TemplateImageResponse';
 import { getIBMPlexMono } from '@/app/font';
 import { getImageResponseCacheControlHeaders } from '@/image-response/cache';
-import { ImageResponse } from 'next/og';
+import { safeImageResponse } from '@/image-response/safe';
 
 export async function GET() {
   const [
@@ -25,7 +25,7 @@ export async function GET() {
 
   const { width, height } = IMAGE_OG_DIMENSION;
 
-  return new ImageResponse(
+  return safeImageResponse(
     <TemplateImageResponse {...{
       photos,
       includeHeader: false,
