@@ -4,11 +4,12 @@ export const removeBase64Prefix = (base64: string) => {
   return base64.match(/^data:image\/[a-z]{3,4};base64,(.+)$/)?.[1] ?? base64;
 };
 
-// Formats `next/og` (satori) cannot decode—both throw when rendered, so
-// they're rejected here and callers degrade rather than fail. Kept as a
-// deny list: anything else is passed through as before, since rejecting
-// unrecognized-but-working formats loses images that render fine today.
-const UNRENDERABLE_IMAGE_TYPES = ['image/webp', 'image/avif'];
+// The only raster formats `next/og` (satori) can decode. webp and avif
+// both throw when rendered, so anything not recognized from its bytes as
+// jpeg or png is dropped rather than handed over to fail mid-render.
+// Matched on sniffed bytes, not the declared type—headers lie, and
+// rejecting on a header mismatch previously discarded working images.
+const RENDERABLE_IMAGE_TYPES = ['image/jpeg', 'image/png'];
 
 // `next/image` negotiates output format from this header, so ask it for
 // something renderable instead of accepting whatever it defaults to
@@ -64,16 +65,18 @@ export const fetchBase64ImageFromUrl = async (
         const buffer = Buffer.from(await response.arrayBuffer());
         // Trust the bytes over the file name: `next/image` urls carry no
         // extension, and storage can serve a format the name doesn't imply
-        const contentType =
-          getContentTypeFromMagicBytes(buffer) ??
-          response.headers.get('content-type')?.split(';')[0].trim() ??
-          (fileExtension === 'png' ? 'image/png' : 'image/jpeg');
-        if (UNRENDERABLE_IMAGE_TYPES.includes(contentType)) {
+        const contentType = getContentTypeFromMagicBytes(buffer);
+        if (!contentType || !RENDERABLE_IMAGE_TYPES.includes(contentType)) {
           // Reached when a photo's optimized variant is missing and
-          // `next/image` serves webp instead—regenerating the variant is
-          // the real fix; dropping it here keeps the build from failing
+          // `next/image` serves something else in its place—regenerating
+          // the variant is the real fix; dropping it here keeps satori
+          // from throwing mid-render and blanking the whole image
           console.error(
-            `Cannot render ${contentType} in image response: ${url}`,
+            'Cannot render image in image response ' +
+            `(sniffed ${contentType ?? 'unknown'}, ` +
+            `declared ${response.headers.get('content-type') ?? 'none'}, ` +
+            `magic ${buffer.subarray(0, 12).toString('hex')}, ` +
+            `extension ${fileExtension ?? 'none'}): ${url}`,
           );
           return undefined;
         }
