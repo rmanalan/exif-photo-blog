@@ -31,6 +31,7 @@ import {
   MATTE_COLOR,
   MATTE_COLOR_DARK,
   ALWAYS_SHOW_EXPOSURE_COMP,
+  UPPERCASE_TITLES,
 } from '@/app/config';
 import AdminPhotoMenu from '@/admin/AdminPhotoMenu';
 import { RevalidatePhoto } from './InfinitePhotoScroll';
@@ -52,6 +53,9 @@ import MaskedScroll from '@/components/MaskedScroll';
 import { useAppText } from '@/i18n/state/client';
 import { Album } from '@/album';
 import AdminPhotoStorageCheck from '@/admin/storage/AdminPhotoStorageCheck';
+import { useEditTitlesState } from '@/admin/edit-titles/EditTitlesState';
+import { DATA_KEY_PHOTO_LARGE } from '@/admin/edit-titles/EditTitlesProvider';
+import FieldsetWithStatus from '@/components/FieldsetWithStatus';
 
 export default function PhotoLarge({
   photo,
@@ -132,7 +136,23 @@ export default function PhotoLarge({
     isUserSignedIn,
   } = useAppState();
 
+  const {
+    isEditingTitles,
+    getPhotoEdit,
+    setPhotoEdit,
+    isPerformingUpdate,
+  } = useEditTitlesState();
+
   const appText = useAppText();
+
+  const photoEditOriginal = useMemo(() => ({
+    title: photo.title ?? '',
+    caption: photo.caption ?? '',
+  }), [photo.title, photo.caption]);
+
+  const photoEdit = isEditingTitles
+    ? getPhotoEdit?.(photo.id, photoEditOriginal) ?? photoEditOriginal
+    : photoEditOriginal;
 
   const showZoomControls = _showZoomControls && areZoomControlsShown;
   const selectZoomImageElement = useCallback(
@@ -177,6 +197,7 @@ export default function PhotoLarge({
     Boolean(photo.title);
 
   const hasTitleContent =
+    isEditingTitles ||
     hasTitle ||
     Boolean(photo.caption);
 
@@ -195,7 +216,10 @@ export default function PhotoLarge({
   const renderPhotoLink =
     <PhotoLink
       photo={photo}
-      className="font-bold uppercase grow"
+      className={clsx(
+        'font-bold grow',
+        UPPERCASE_TITLES && 'uppercase',
+      )}
       prefetch={prefetch}
     />;
 
@@ -282,6 +306,7 @@ export default function PhotoLarge({
     <AppGrid
       containerRef={ref}
       className={className}
+      {...{ [DATA_KEY_PHOTO_LARGE]: true }}
       contentMain={showZoomControls
         ? <div className={largePhotoContainerClassName}>
           {renderLargePhoto}
@@ -305,15 +330,50 @@ export default function PhotoLarge({
             )}>
               {/* Meta */}
               <div className="pr-3 md:pr-0">
-                <div className="float-end hidden md:block">
-                  {renderAdminMenu}
-                </div>
-                {hasTitle && (showTitleAsH1
-                  ? <h1>{renderPhotoLink}</h1>
-                  : renderPhotoLink)}
+                {!isEditingTitles &&
+                  <div className="float-end hidden md:block">
+                    {renderAdminMenu}
+                  </div>}
+                {isEditingTitles
+                  ? <div className={clsx(
+                    'space-y-2 mb-2',
+                    // Keep text large for iOS forms
+                    'md:[&_input]:text-sm',
+                  )}>
+                    <FieldsetWithStatus
+                      id={`edit-title-${photo.id}`}
+                      label="Title"
+                      value={photoEdit.title}
+                      onChange={title => setPhotoEdit?.(
+                        photo.id,
+                        { title },
+                        photoEditOriginal,
+                      )}
+                      placeholder="Title"
+                      hideLabel
+                      readOnly={isPerformingUpdate}
+                      className="[&_input]:font-bold"
+                    />
+                    <FieldsetWithStatus
+                      id={`edit-caption-${photo.id}`}
+                      label="Caption"
+                      value={photoEdit.caption}
+                      onChange={caption => setPhotoEdit?.(
+                        photo.id,
+                        { caption },
+                        photoEditOriginal,
+                      )}
+                      placeholder="Caption"
+                      hideLabel
+                      readOnly={isPerformingUpdate}
+                    />
+                  </div>
+                  : hasTitle && (showTitleAsH1
+                    ? <h1>{renderPhotoLink}</h1>
+                    : renderPhotoLink)}
                 <div className="space-y-baseline">
-                  {photo.caption &&
-                    <div className="uppercase">
+                  {!isEditingTitles && photo.caption &&
+                    <div className={clsx(UPPERCASE_TITLES && 'uppercase')}>
                       {photo.caption}
                     </div>}
                   {(
@@ -361,9 +421,10 @@ export default function PhotoLarge({
                 'space-y-baseline',
                 !hasTitleContent && !hasMetaContent && 'md:-mt-baseline',
               )}>
-                <div className="float-end md:hidden">
-                  {renderAdminMenu}
-                </div>
+                {!isEditingTitles &&
+                  <div className="float-end md:hidden">
+                    {renderAdminMenu}
+                  </div>}
                 {showExifContent &&
                   <>
                     <ul className="text-medium">

@@ -6,7 +6,7 @@ import {
 } from '@/image-response';
 import CameraImageResponse from '@/camera/CameraImageResponse';
 import { getIBMPlexMono } from '@/app/font';
-import { ImageResponse } from 'next/og';
+import { safeImageResponse } from '@/image-response/safe';
 import { getImageResponseCacheControlHeaders } from '@/image-response/cache';
 import { getUniqueCameras } from '@/photo/query';
 import { staticallyGenerateCategoryIfConfigured } from '@/app/static';
@@ -39,7 +39,7 @@ export async function GET(
 
   const { width, height } = IMAGE_OG_DIMENSION_SMALL;
 
-  return new ImageResponse(
+  return safeImageResponse(
     <CameraImageResponse {...{
       camera,
       photos,

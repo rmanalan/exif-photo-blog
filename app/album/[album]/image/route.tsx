@@ -4,7 +4,7 @@ import {
   MAX_PHOTOS_TO_SHOW_PER_CATEGORY,
 } from '@/image-response';
 import { getIBMPlexMono } from '@/app/font';
-import { ImageResponse } from 'next/og';
+import { safeImageResponse } from '@/image-response/safe';
 import { getImageResponseCacheControlHeaders } from '@/image-response/cache';
 import { staticallyGenerateCategoryIfConfigured } from '@/app/static';
 import AlbumImageResponse from '@/album/AlbumImageResponse';
@@ -39,7 +39,7 @@ export async function GET(
 
   const { width, height } = IMAGE_OG_DIMENSION_SMALL;
 
-  return new ImageResponse(
+  return safeImageResponse(
     <AlbumImageResponse {...{
       album,
       photos,

@@ -5,7 +5,7 @@ import {
 } from '@/image-response';
 import YearImageResponse from '@/year/YearImageResponse';
 import { getIBMPlexMono } from '@/app/font';
-import { ImageResponse } from 'next/og';
+import { safeImageResponse } from '@/image-response/safe';
 import { getImageResponseCacheControlHeaders } from '@/image-response/cache';
 import { getUniqueYears } from '@/photo/query';
 import { staticallyGenerateCategoryIfConfigured } from '@/app/static';
@@ -38,7 +38,7 @@ export async function GET(
 
   const { width, height } = IMAGE_OG_DIMENSION_SMALL;
 
-  return new ImageResponse(
+  return safeImageResponse(
     <YearImageResponse {...{
       year,
       photos,
