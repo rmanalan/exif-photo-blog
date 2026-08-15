@@ -268,6 +268,8 @@ export const IMAGE_QUALITY =
     ? parseInt(process.env.NEXT_PUBLIC_IMAGE_QUALITY)
     : 75;
 export const BLUR_ENABLED =
+  process.env.NEXT_PUBLIC_DISABLE_BLUR !== '1' &&
+  // Legacy environment variable
   process.env.NEXT_PUBLIC_BLUR_DISABLED !== '1';
 
 // AI
@@ -406,6 +408,8 @@ export const DEFAULT_THEME =
     : process.env.NEXT_PUBLIC_DEFAULT_THEME === 'light'
       ? 'light'
       : 'system';
+export const UPPERCASE_TITLES =
+  process.env.NEXT_PUBLIC_DISABLE_UPPERCASE_TITLES !== '1';
 export const MATTE_PHOTOS =
   process.env.NEXT_PUBLIC_MATTE_PHOTOS === '1';
 export const MATTE_COLOR =
@@ -567,6 +571,7 @@ export const APP_CONFIGURATION = {
     Boolean(MATTE_COLOR_DARK),
   matteColor: MATTE_COLOR,
   matteColorDark: MATTE_COLOR_DARK,
+  arePhotoTitlesUppercase: UPPERCASE_TITLES,
   // Settings
   isGeoPrivacyEnabled: GEO_PRIVACY_ENABLED,
   arePublicDownloadsEnabled: ALLOW_PUBLIC_DOWNLOADS,
@@ -625,6 +630,9 @@ const ALL_DEPRECATED_ENV_VARS = [{
 }, {
   old: 'NEXT_PUBLIC_HIDE_SOCIAL',
   replacement: 'NEXT_PUBLIC_SOCIAL_NETWORKS',
+}, {
+  old: 'NEXT_PUBLIC_BLUR_DISABLED',
+  replacement: 'NEXT_PUBLIC_DISABLE_BLUR',
 }];
 
 export const USED_DEPRECATED_ENV_VARS = ALL_DEPRECATED_ENV_VARS
