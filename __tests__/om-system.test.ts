@@ -121,6 +121,18 @@ describe('OM SYSTEM and Olympus profiles', () => {
     },
   );
 
+  it.each([['om', true], ['olympus', false]] as const)(
+    'includes digital zoom in sensor-derived equivalents for %s',
+    (header, littleEndian) => {
+      const bytes = equipmentMakerNote([216, 10], littleEndian, header);
+      expect(getOmFocalLengthIn35MmFormat(bytes, 17, 2)).toBe(68);
+      expect(getOmFocalLengthIn35MmFormat(bytes, 17, 1.4)).toBe(48);
+      for (const zoom of [undefined, 0, 1, -2, NaN, Infinity]) {
+        expect(getOmFocalLengthIn35MmFormat(bytes, 17, zoom)).toBe(34);
+      }
+    },
+  );
+
   it('withholds equivalents for missing or malformed sensor metadata', () => {
     expect(getOmFocalLengthIn35MmFormat(makerNote(fixtures.color1), 25))
       .toBeUndefined();

@@ -72,6 +72,7 @@ const readOmCameraSettings = (
 export const getOmFocalLengthIn35MmFormat = (
   bytes: Buffer,
   focalLength?: number,
+  digitalZoomRatio = 1,
 ): number | undefined => {
   if (!focalLength || !Number.isFinite(focalLength) || focalLength <= 0) {
     return undefined;
@@ -96,8 +97,10 @@ export const getOmFocalLengthIn35MmFormat = (
   const numerator = u32(offset);
   const denominator = u32(offset + 4);
   if (!numerator || !denominator) { return undefined; }
+  const zoom = Number.isFinite(digitalZoomRatio) && digitalZoomRatio > 1
+    ? digitalZoomRatio : 1;
   const equivalent = Math.round(
-    focalLength * Math.hypot(36, 24) / (numerator / denominator),
+    focalLength * Math.hypot(36, 24) / (numerator / denominator) * zoom,
   );
   return equivalent > 0 && equivalent <= 32767 ? equivalent : undefined;
 };

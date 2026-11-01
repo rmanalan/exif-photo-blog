@@ -85,6 +85,7 @@ export const extractImageDataFromBlobPath = async (
   imageResizedBase64?: string
   shouldStripGpsData?: boolean
   fileBytes?: ArrayBuffer
+  unzoomedFocalLengthIn35MmFormat?: number
   error?: string
 }> => {
   const url = decodeURIComponent(blobPath);
@@ -103,6 +104,7 @@ export const extractImageDataFromBlobPath = async (
   let blurData: string | undefined;
   let imageResizedBase64: string | undefined;
   let shouldStripGpsData = false;
+  let unzoomedFocalLengthIn35MmFormat: number | undefined;
   let error: string | undefined;
 
   const fileBytes = blobPath
@@ -144,10 +146,20 @@ export const extractImageDataFromBlobPath = async (
             ));
             if ((!Number.isFinite(equivalent) || equivalent <= 0) &&
               dataExif.tags) {
+              const focalLength = Number(
+                getCompatibleExifValue('FocalLength', dataExif, dataExifr),
+              );
+              const digitalZoomRatio = Number(getCompatibleExifValue(
+                'DigitalZoomRatio', dataExif, dataExifr,
+              ));
+              unzoomedFocalLengthIn35MmFormat =
+                getOmFocalLengthIn35MmFormat(makerNote, focalLength);
               dataExif.tags.FocalLengthIn35mmFormat =
-                getOmFocalLengthIn35MmFormat(makerNote, Number(
-                  getCompatibleExifValue('FocalLength', dataExif, dataExifr),
-                ))?.toString();
+                (Number.isFinite(digitalZoomRatio) && digitalZoomRatio > 1
+                  ? getOmFocalLengthIn35MmFormat(
+                    makerNote, focalLength, digitalZoomRatio,
+                  )
+                  : unzoomedFocalLengthIn35MmFormat)?.toString();
             }
           }
         }
@@ -216,6 +228,7 @@ export const extractImageDataFromBlobPath = async (
     imageResizedBase64,
     shouldStripGpsData,
     fileBytes,
+    unzoomedFocalLengthIn35MmFormat,
     error,
   };
 };

@@ -200,6 +200,7 @@ it('keeps an explicit 35mm equivalent instead of deriving one', async () => {
       [piexif.ExifIFD.MakerNote]: 'fixture',
       [piexif.ExifIFD.FocalLength]: [25, 1],
       [piexif.ExifIFD.FocalLengthIn35mmFilm]: 60,
+      [piexif.ExifIFD.DigitalZoomRatio]: [2, 1],
     },
   });
   const jpeg = Buffer.from(piexif.insert(exif,
@@ -213,6 +214,42 @@ it('keeps an explicit 35mm equivalent instead of deriving one', async () => {
   }));
   expect(getOmFocalLengthIn35MmFormat).not.toHaveBeenCalled();
 });
+
+it.each([
+  ['auto', 34, 68],
+  ['auto', 80, 80],
+  ['only-missing', 34, 68],
+  ['overwrite', 34, 68],
+] as const)(
+  '%s Sync updates a derived equivalent %i to %i with 2x zoom',
+  async (syncMode, previousEquivalent, expectedEquivalent) => {
+    const original = await getPhoto('penphoto');
+    jest.mocked(getPhoto).mockResolvedValue({
+      ...original!, focalLength: 17, digitalZoomRatio: 2,
+      focalLengthIn35MmFormat: previousEquivalent,
+    });
+    const exif = piexif.dump({
+      '0th': { [piexif.ImageIFD.Make]: 'OM Digital Solutions' },
+      Exif: {
+        [piexif.ExifIFD.MakerNote]: 'fixture',
+        [piexif.ExifIFD.FocalLength]: [17, 1],
+        [piexif.ExifIFD.DigitalZoomRatio]: [2, 1],
+      },
+    });
+    const jpeg = Buffer.from(piexif.insert(exif,
+      strippedJpeg.toString('binary')), 'binary');
+    jest.mocked(fetchUrlWithByteLimit).mockResolvedValue(
+      Uint8Array.from(jpeg).buffer,
+    );
+    jest.mocked(getOmFocalLengthIn35MmFormat)
+      .mockImplementation((_bytes, _focal, zoom) => zoom === 2 ? 68 : 34);
+    await syncPhotoAction('penphoto', { syncMode });
+    expect(updatePhoto).toHaveBeenCalledWith(expect.objectContaining({
+      focalLength: 17, digitalZoomRatio: 2,
+      focalLengthIn35MmFormat: expectedEquivalent,
+    }));
+  },
+);
 
 it('replaces the color recipe with the re-uploaded mono recipe', async () => {
   await replacePhotoStorageAction('penphoto',
