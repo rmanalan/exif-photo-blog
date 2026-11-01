@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { deparameterize } from '@/utility/string';
 
 export const OM_RECIPE_VERSION = 1;
 
@@ -129,12 +130,13 @@ export const omRecipeKeyAliases = (key: string): [string, string] => {
   return [canonical, canonical.replace(/^om-/, 'om-pen-')];
 };
 
-export const labelForOmRecipe = (kind: OmRecipe['kind']) =>
-  kind === 'color' ? 'Color recipe' : 'Mono recipe';
-
 export const labelForOmRecipeKey = (key: string) =>
-  labelForOmRecipe(OM_RECIPE_KEY_PATTERN.exec(key)?.[1] === 'color'
-    ? 'color' : 'mono');
+  OM_RECIPE_KEY_PATTERN.exec(key)?.[1] === 'color'
+    ? 'Color Recipe'
+    : 'Mono Recipe';
+
+export const labelForOmRecipeTitle = (title: string) =>
+  isOmRecipeKey(title) ? labelForOmRecipeKey(title) : deparameterize(title);
 
 export const formatOmWhiteBalance = (wb: OmRecipe['whiteBalance']) =>
   wb.kelvin ? `${wb.kelvin}K` : OM_WHITE_BALANCE_LABELS[wb.mode];

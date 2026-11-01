@@ -165,10 +165,6 @@ export const getWheresFromOptions = (
     } else {
       wheres.push(`recipe_title=$${valuesIndex++}`);
       wheresValues.push(recipe);
-      wheres.push(
-        'COALESCE(recipe_data->>\'camera\', \'fujifilm\')' +
-        ' = \'fujifilm\'',
-      );
     }
   }
   // Compare against undefined so focal lengths of 0 are filtered

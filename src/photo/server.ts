@@ -28,8 +28,8 @@ import {
 import { isExifForNikon } from '@/platforms/nikon/server';
 import {
   deletePhoto,
-  getRecipeTitleForData,
-  updateAllMatchingRecipeTitles,
+  getCustomRecipeTitleForData,
+  renameRecipeForMatchingPhotos,
 } from '@/photo/query';
 import { MAX_PHOTO_UPLOAD_SIZE_IN_BYTES, PhotoDbInsert } from '.';
 import { convertExifToFormData } from './form/server';
@@ -43,13 +43,14 @@ import {
   OmRecipe,
 } from '@/platforms/om-system/recipe';
 import {
-  createOmRecipeKey,
   getOmFocalLengthIn35MmFormat,
   getOmRecipeFromMakerNote,
 } from '@/platforms/om-system/server';
 
 import { createOmRecipeData, getOmRecipe, isOmRecipeData, parseRecipeData }
   from '@/recipe/serialization';
+import { isRecipeHashKey } from '@/recipe/key';
+import { createRecipeHashKey } from '@/recipe/server';
 
 const IMAGE_WIDTH_BLUR = 200;
 const IMAGE_WIDTH_DEFAULT = 200;
@@ -175,7 +176,7 @@ export const extractImageDataFromBlobPath = async (
     ? await getColorFieldsForPhotoForm(url)
     : undefined;
 
-  const formDataFromExif = dataExif
+  const formDataFromExif: Partial<PhotoFormData> | undefined = dataExif
     ? {
       ...includeInitialPhotoFields && {
         hidden: 'false',
@@ -187,11 +188,17 @@ export const extractImageDataFromBlobPath = async (
       ...convertExifToFormData(dataExif, dataExifr, film, recipe),
       ...didCheckOmRecipe && {
         recipeData: JSON.stringify(createOmRecipeData(omRecipe)),
-        recipeTitle: omRecipe ? createOmRecipeKey(omRecipe) : '',
       },
       ...colorFields,
-    } satisfies Partial<PhotoFormData>
+    }
     : undefined;
+
+  if (formDataFromExif && (recipe || didCheckOmRecipe)) {
+    formDataFromExif.recipeTitle = await getAutoRecipeTitle(
+      formDataFromExif.recipeData,
+      formDataFromExif.film,
+    ) ?? '';
+  }
 
   return {
     blobId,
@@ -336,6 +343,30 @@ export const removeGpsData = async (image: ArrayBuffer) =>
     .toFormat('jpeg', { quality: PRESERVE_ORIGINAL_UPLOADS ? 95 : 80 })
     .toBuffer();
 
+// Prefer a custom title already given to matching recipe data
+export const getAutoRecipeTitle = async (
+  recipeData?: string,
+  film?: string,
+) =>
+  recipeData
+    ? await getCustomRecipeTitleForData(recipeData, film) ??
+      createRecipeHashKey(recipeData, film)
+    : undefined;
+
+type RecipeFields = { recipeData?: string | object, film?: string };
+
+// Custom titles survive re-extraction while their recipe is unchanged
+export const shouldPreserveRecipeTitle = (
+  title: string | undefined,
+  previous: RecipeFields,
+  next: RecipeFields,
+) => {
+  if (!title || isRecipeHashKey(title)) { return false; }
+  const previousKey = createRecipeHashKey(previous.recipeData, previous.film);
+  return previousKey !== undefined &&
+    previousKey === createRecipeHashKey(next.recipeData, next.film);
+};
+
 export const convertFormDataToPhotoDbInsertAndLookupRecipeTitle =
   async (...args: Parameters<typeof convertFormDataToPhotoDbInsert>):
   Promise<ReturnType<typeof convertFormDataToPhotoDbInsert>> => {
@@ -343,23 +374,17 @@ export const convertFormDataToPhotoDbInsertAndLookupRecipeTitle =
 
     const data = parseRecipeData(photo.recipeData);
     if (isOmRecipeData(data)) {
-      // Derive identity on the server rather than trusting a submitted title.
       const recipe = isOmSystemCamera(photo.make)
         ? getOmRecipe(data) : undefined;
       photo.recipeData = JSON.stringify(createOmRecipeData(recipe));
-      photo.recipeTitle = recipe ? createOmRecipeKey(recipe) : undefined;
     }
 
-    if (photo.recipeData && !isOmRecipeData(data) &&
-      !photo.recipeTitle && photo.film) {
-      const recipeTitle = await getRecipeTitleForData(
-        photo.recipeData,
-        photo.film,
-      );
-      // Only replace recipe title when a new one is found
-      if (recipeTitle) {
-        photo.recipeTitle = recipeTitle;
-      }
+    if (!photo.recipeTitle) {
+      photo.recipeTitle =
+        await getAutoRecipeTitle(photo.recipeData, photo.film);
+    } else if (isRecipeHashKey(photo.recipeTitle)) {
+      // Derive hash titles from data rather than trusting a submitted title
+      photo.recipeTitle = createRecipeHashKey(photo.recipeData, photo.film);
     }
 
     return photo;
@@ -368,21 +393,21 @@ export const convertFormDataToPhotoDbInsertAndLookupRecipeTitle =
 export const propagateRecipeTitleIfNecessary = async (
   formData: FormData,
   photo: PhotoDbInsert,
+  previousTitle?: string,
 ) => {
   if (
-    formData.get('applyRecipeTitleGlobally') === 'true' &&
-    !isOmRecipeData(parseRecipeData(photo.recipeData)) &&
     // Only propagate recipe title if set by user before lookup
     formData.get('recipeTitle') &&
     photo.recipeTitle &&
-    photo.recipeData &&
-    photo.film
+    photo.recipeTitle !== previousTitle
   ) {
-    await updateAllMatchingRecipeTitles(
-      photo.recipeTitle,
-      photo.recipeData,
-      photo.film,
-    );
+    await renameRecipeForMatchingPhotos({
+      photoId: photo.id,
+      previousTitle,
+      title: photo.recipeTitle,
+      recipeData: photo.recipeData,
+      film: photo.film,
+    });
   }
 };
 

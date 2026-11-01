@@ -6,7 +6,7 @@ import EntityLink, { EntityLinkExternalProps }
   from '@/components/entity/EntityLink';
 import IconRecipe from '@/components/icons/IconRecipe';
 import { pathForRecipe } from '@/app/path';
-import { labelForOmRecipe, OmRecipe } from './recipe';
+import { labelForOmRecipeTitle, OmRecipe } from './recipe';
 import OmRecipeOverlay from './OmRecipeOverlay';
 import { useAppState } from '@/app/AppState';
 import { Camera } from '@/camera';
@@ -41,7 +41,7 @@ export default function PhotoOmRecipe({
     setShouldRespondToKeyboardCommands?.(false);
     return () => setShouldRespondToKeyboardCommands?.(true);
   }, [open, setShouldRespondToKeyboardCommands]);
-  const label = labelForOmRecipe(recipe.kind);
+  const label = labelForOmRecipeTitle(recipeKey);
   const trigger = <PhotoRecipeOverlayButton
     toggleRecipeOverlay={isOnPhoto ? toggleRecipeOverlay : undefined}
     isShowingRecipeOverlay={open}

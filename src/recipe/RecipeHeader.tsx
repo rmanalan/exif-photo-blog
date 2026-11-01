@@ -32,11 +32,16 @@ export default function RecipeHeader({
   const appText = useAppText();
 
   const recipeProps = getRecipePropsFromPhotos(photos, selectedPhoto);
-  const omPhoto = isOmRecipeKey(recipe)
-    ? [selectedPhoto, ...photos].find(photo =>
+  const recipeTitles = isOmRecipeKey(recipe)
+    ? omRecipeKeyAliases(recipe)
+    : [recipe];
+  const findOmPhoto = (candidates: (Photo | undefined)[]) =>
+    candidates.find(photo =>
       getOmRecipe(photo?.recipeData) && photo?.recipeTitle &&
-        omRecipeKeyAliases(recipe).includes(photo.recipeTitle))
-    : undefined;
+        recipeTitles.includes(photo.recipeTitle));
+  // Custom titles may name recipes from either brand
+  const omPhoto = findOmPhoto([selectedPhoto]) ??
+    (recipeProps ? undefined : findOmPhoto(photos));
   const omRecipe = getOmRecipe(omPhoto?.recipeData);
 
   return (

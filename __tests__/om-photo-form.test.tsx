@@ -57,6 +57,38 @@ it.each([recipe, undefined])(
     expect(submitted.get('title')).toBe('Updated title');
     expect(submitted.get('recipeData')).toBe(data);
     expect(submitted.get('recipeTitle')).toBe(title);
-    expect(form.querySelector('textarea[name="recipeData"]')).toBeNull();
+    const recipeData = form.querySelector('textarea[name="recipeData"]');
+    expect(recipeData).toHaveProperty('readOnly', false);
+    const hash = screen.getByLabelText('auto-title');
+    expect(hash).toHaveProperty('checked', Boolean(value));
+    if (value) {
+      // Auto-titles render as a single, non-interactive tag
+      expect(form.querySelector('#recipeTitle')).toBeNull();
+      expect(screen.getByRole('button', { name: `Remove tag "${title}"` }))
+        .toHaveProperty('disabled', true);
+    } else {
+      expect(form.querySelector('#recipeTitle'))
+        .toHaveProperty('readOnly', false);
+    }
+    expect(hash).toHaveProperty('disabled', !value);
+    expect(form.querySelector('input[name="applyRecipeTitleGlobally"]'))
+      .toBeNull();
   },
 );
+
+it('leaves the hash checkbox unchecked for custom titles', () => {
+  const data = JSON.stringify(createOmRecipeData(recipe));
+  render(<PhotoForm type="edit" initialPhotoForm={{
+    id: 'omphoto1', url: 'https://example.test/photo.jpg', extension: 'jpg',
+    make: 'OM Digital Solutions', model: 'OM-3', aspectRatio: '1.5',
+    recipeTitle: 'street-color', recipeData: data,
+    takenAt: '2026-10-29T12:00:00Z', takenAtNaive: '2026-10-29 12:00:00',
+  }} albums={[]} uniqueTags={[]} uniqueRecipes={[]} uniqueFilms={[]} />);
+  const hash = screen.getByLabelText('auto-title');
+  expect(hash).toHaveProperty('checked', false);
+  expect(hash).toHaveProperty('disabled', false);
+  expect(document.querySelector('#recipeTitle'))
+    .toHaveProperty('readOnly', false);
+  expect(screen.getByRole('button', { name: 'Remove tag "street-color"' }))
+    .toHaveProperty('disabled', false);
+});

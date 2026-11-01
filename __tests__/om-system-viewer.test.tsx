@@ -25,6 +25,7 @@ const recipe: OmRecipe = {
   tone: { shadow: -4, mid: 0, highlight: 4 },
   shading: 3, sharpness: 0, contrast: 0,
 };
+const key = `om-v1-color-${'a'.repeat(64)}`;
 
 it('keeps gallery navigation separate and restores page shortcuts on close',
   async () => {
@@ -32,10 +33,10 @@ it('keeps gallery navigation separate and restores page shortcuts on close',
     jest.mocked(useAppState).mockReturnValue({
       setShouldRespondToKeyboardCommands: setKeyboardCommands,
     });
-    render(<PhotoOmRecipe recipe={recipe} recipeKey="test-key"
+    render(<PhotoOmRecipe recipe={recipe} recipeKey={key}
       camera={{ make: 'OM Digital Solutions', model: 'PEN' }} />);
-    expect(screen.getByRole('link', { name: 'Color recipe' })
-      .getAttribute('href')).toBe('/recipe/test-key');
+    expect(screen.getByRole('link', { name: 'Color Recipe' })
+      .getAttribute('href')).toBe(`/recipe/${key}`);
     const trigger = screen.getByRole('button', {
       name: 'Show color recipe settings',
     });
@@ -81,7 +82,7 @@ it.each([
     label: 'OLYMPUS CORPORATION E-P7' },
   { make: undefined, model: 'E-P7', label: 'E-P7' },
 ])('shows the source camera $label in the dialog', ({ make, model, label }) => {
-  render(<PhotoOmRecipe recipe={recipe} recipeKey="test-key"
+  render(<PhotoOmRecipe recipe={recipe} recipeKey={key}
     camera={{ make, model }} />);
   fireEvent.click(screen.getByRole('button', {
     name: 'Show color recipe settings',
@@ -91,7 +92,7 @@ it.each([
 });
 
 it('omits a camera label when EXIF camera fields are missing', () => {
-  render(<PhotoOmRecipe recipe={recipe} recipeKey="test-key" />);
+  render(<PhotoOmRecipe recipe={recipe} recipeKey={key} />);
   fireEvent.click(screen.getByRole('button', {
     name: 'Show color recipe settings',
   }));
@@ -100,7 +101,7 @@ it('omits a camera label when EXIF camera fields are missing', () => {
 
 it('uses the modal on phones without also toggling the photo overlay', () => {
   const toggleRecipeOverlay = jest.fn();
-  render(<PhotoOmRecipe recipe={recipe} recipeKey="test-key"
+  render(<PhotoOmRecipe recipe={recipe} recipeKey={key}
     toggleRecipeOverlay={toggleRecipeOverlay}
     isShowingRecipeOverlay={false} />);
   fireEvent.click(screen.getByRole('button', {
@@ -108,6 +109,16 @@ it('uses the modal on phones without also toggling the photo overlay', () => {
   }));
   expect(screen.getByRole('dialog')).toBeDefined();
   expect(toggleRecipeOverlay).not.toHaveBeenCalled();
+});
+
+it('labels custom-titled recipes by name', () => {
+  render(<PhotoOmRecipe recipe={recipe} recipeKey="street-color" />);
+  expect(screen.getByRole('link', { name: 'Street Color' })
+    .getAttribute('href')).toBe('/recipe/street-color');
+  fireEvent.click(screen.getByRole('button', {
+    name: 'Show street color settings',
+  }));
+  expect(screen.getByRole('link', { name: 'Street Color' })).toBeDefined();
 });
 
 it('exposes the active mono filter strength in its accessible name', () => {

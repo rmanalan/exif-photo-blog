@@ -14,7 +14,9 @@ import { roundToNumber } from '@/utility/number';
 import { convertStringToArray, parameterize } from '@/utility/string';
 import { generateNanoid } from '@/utility/nanoid';
 import { TAG_FAVS, getValidationMessageForTags } from '@/tag';
-import { MAKE_FUJIFILM } from '@/platforms/fujifilm';
+import { isMakeFujifilm } from '@/platforms/fujifilm';
+import { isOmSystemCamera } from '@/platforms/om-system/recipe';
+import { isOmRecipeData, parseRecipeData } from '@/recipe/serialization';
 import { ReactNode } from 'react';
 import { FujifilmSimulation } from '@/platforms/fujifilm/simulation';
 import { SelectMenuOptionType } from '@/components/SelectMenuOption';
@@ -30,7 +32,6 @@ type VirtualFields =
   'albums' |
   'visibility' |
   'favorite' |
-  'applyRecipeTitleGlobally' |
   'shouldStripGpsData' |
   'locationPlace' |
   'locationDisplayName' |
@@ -89,6 +90,11 @@ export type FormMeta = {
 
 const STRING_MAX_LENGTH_SHORT = 255;
 const STRING_MAX_LENGTH_LONG  = 1000;
+
+const hasRecipeFields = ({ make, recipeData }: Partial<PhotoFormData>) =>
+  isMakeFujifilm(make) ||
+  isOmSystemCamera(make) ||
+  isOmRecipeData(parseRecipeData(recipeData));
 
 // Omit options entirely (an empty array still renders the dropdown)
 const tagOptionsForAutocomplete = (
@@ -206,21 +212,7 @@ const FORM_METADATA = (
     tagOptionsLimit: 1,
     spellCheck: false,
     capitalize: false,
-    shouldHide: ({ make }) => make !== MAKE_FUJIFILM,
-  },
-  applyRecipeTitleGlobally: {
-    section: 'exif',
-    label: 'apply recipe title globally',
-    type: 'checkbox',
-    excludeFromInsert: true,
-    hideModificationStatus: true,
-    shouldHide: ({ make, recipeTitle, recipeData }, changedFormKeys) =>
-      !(
-        make === MAKE_FUJIFILM &&
-        recipeData &&
-        recipeTitle &&
-        changedFormKeys?.includes('recipeTitle')
-      ),
+    shouldHide: form => !hasRecipeFields(form),
   },
   recipeData: {
     section: 'exif',
@@ -228,7 +220,7 @@ const FORM_METADATA = (
     label: 'recipe data',
     spellCheck: false,
     capitalize: false,
-    shouldHide: ({ make }) => make !== MAKE_FUJIFILM,
+    shouldHide: form => !hasRecipeFields(form),
     isJson: true,
     validate: value => {
       let validationMessage = undefined;

@@ -20,6 +20,10 @@ import {
 } from '@/platforms/om-system/recipe';
 
 import { getFujifilmRecipe } from './serialization';
+import {
+  filmForFujifilmRecipeKey,
+  recipeTitleForDisplay,
+} from './key';
 
 export type RecipeWithMeta = { recipe: string } & CategoryQueryMeta;
 
@@ -34,10 +38,14 @@ export interface RecipeProps {
   make?: string
 }
 
-export const formatRecipe = (recipe?: string) =>
-  recipe && isOmRecipeKey(recipe)
+export const formatRecipe = (recipe = '') => {
+  const film = filmForFujifilmRecipeKey(recipe);
+  return isOmRecipeKey(recipe)
     ? labelForOmRecipeKey(recipe)
-    : capitalizeWords(recipe?.replaceAll('-', ' '));
+    : film
+      ? `${labelForFilm(film).medium} Recipe`
+      : capitalizeWords(recipe.replaceAll('-', ' '));
+};
 
 export const titleForRecipe = (
   recipe: string,
@@ -191,7 +199,7 @@ export const getRecipePropsFromPhotos = (
   const data = getFujifilmRecipe(photo?.recipeData);
   return data && photo?.film
     ? {
-      title: photo.recipeTitle,
+      title: recipeTitleForDisplay(photo.recipeTitle),
       data,
       film: photo.film,
       iso: photo.isoFormatted,

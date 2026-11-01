@@ -294,7 +294,7 @@ describe('OM SYSTEM and Olympus profiles', () => {
     expect(createOmRecipeKey(requireRecipe(fixtures['color4-shading']))).not.toBe(key);
     expect(createOmRecipeKey(requireRecipe(fixtures.mono4))).not.toBe(key);
     expect(isOmRecipeKey(key)).toBe(true);
-    expect(formatRecipe(key)).toBe('Color recipe');
+    expect(formatRecipe(key)).toBe('Color Recipe');
     expect(formatRecipe('classic-chrome')).toBe('Classic Chrome');
   });
 
@@ -303,7 +303,8 @@ describe('OM SYSTEM and Olympus profiles', () => {
     expect(key).toMatch(/^om-v1-color-/);
     const legacy = key.replace(/^om-/, 'om-pen-');
     expect(isOmRecipeKey(legacy)).toBe(true);
-    expect(labelForOmRecipeKey(legacy)).toBe('Color recipe');
+    expect(labelForOmRecipeKey(legacy))
+      .toBe('Color Recipe');
     expect(omRecipeKeyAliases(legacy)).toEqual([key, legacy]);
     for (const recipe of [key, legacy]) {
       expect(getWheresFromOptions({ recipe })).toMatchObject({

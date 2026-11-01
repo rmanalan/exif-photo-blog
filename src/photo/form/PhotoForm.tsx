@@ -60,7 +60,9 @@ import { convertPlaceToAutocomplete, Place } from '@/place';
 import ErrorNote from '@/components/ErrorNote';
 import { convertRecipesForForm, Recipes } from '@/recipe';
 import deepEqual from 'fast-deep-equal/es6/react';
-import ApplyRecipeTitleGloballyCheckbox from './ApplyRecipesGloballyCheckbox';
+import RecipeTitleHashCheckbox from './RecipeTitleHashCheckbox';
+import RecipeTitleRenameWarning from './RecipeTitleRenameWarning';
+import { isRecipeHashKey } from '@/recipe/key';
 import FieldsetRecipeData from './FieldsetRecipeData';
 import { convertFilmsForForm, Films } from '@/film';
 import {
@@ -110,7 +112,6 @@ import FieldsetAlbum from '@/album/FieldsetAlbum';
 import Form from 'next/form';
 import { useSearchParams } from 'next/navigation';
 import DateTimePicker from '@/components/DateTimePicker';
-import { isOmRecipeData, parseRecipeData } from '@/recipe/serialization';
 
 const THUMBNAIL_SIZE = 300;
 /** Form cap. The floating thumb is placed to the right of this. */
@@ -450,8 +451,6 @@ export default function PhotoForm({
     }
   };
 
-  const hasOmRecipeData = isOmRecipeData(parseRecipeData(formData.recipeData));
-
   const isFieldHidden = (
     key: FormFields,
     hideIfEmpty?: boolean,
@@ -478,15 +477,6 @@ export default function PhotoForm({
       );
     }
   };
-
-  const onMatchResults = useCallback((didFindMatchingPhotos: boolean) => {
-    setFormData(data => ({
-      ...data,
-      applyRecipeTitleGlobally: didFindMatchingPhotos
-        ? 'true'
-        : 'false',
-    }));
-  }, [setFormData]);
 
   // Recipe data copied in from a chosen title can be replaced by subsequent
   // titles, and is never used to search for photos needing that title
@@ -721,11 +711,6 @@ export default function PhotoForm({
                   type,
                   staticValue,
                 }]) => {
-                  if (hasOmRecipeData &&
-                    (key === 'recipeData' || key === 'recipeTitle')) {
-                    return <input key={key} type="hidden" name={key}
-                      value={formData[key] ?? ''} />;
-                  }
                   if (!isFieldHidden(key, hideIfEmpty, shouldHide)) {
                     // eslint-disable-next-line @stylistic/max-len
                     const fieldProps: ComponentProps<typeof FieldsetWithStatus> = {
@@ -852,18 +837,26 @@ export default function PhotoForm({
                             <PhotoFilmIcon />
                           </span>}
                         />;
-                      case 'applyRecipeTitleGlobally':
-                        return <ApplyRecipeTitleGloballyCheckbox
+                      case 'recipeTitle':
+                        return <FieldsetWithStatus
                           key={key}
                           {...fieldProps}
-                          photoId={initialPhotoForm.id}
-                          recipeTitle={formData.recipeTitle}
-                          hasRecipeTitleChanged={
-                            changedFormKeys.includes('recipeTitle')}
-                          recipeData={formData.recipeData}
-                          film={formData.film}
-                          didCopyRecipeData={didCopyRecipeData}
-                          onMatchResults={onMatchResults}
+                          readOnly={fieldProps.readOnly ||
+                            isRecipeHashKey(formData.recipeTitle)}
+                          labelAccessory={<RecipeTitleHashCheckbox
+                            recipeTitle={formData.recipeTitle}
+                            recipeData={formData.recipeData}
+                            film={formData.film}
+                            onChange={recipeTitle => setFormData(data =>
+                              ({ ...data, recipeTitle }))}
+                          />}
+                          footer={<RecipeTitleRenameWarning
+                            photoId={initialPhotoForm.id}
+                            previousTitle={initialPhotoForm.recipeTitle}
+                            recipeTitle={formData.recipeTitle}
+                            recipeData={formData.recipeData}
+                            film={formData.film}
+                          />}
                         />;
                       case 'recipeData':
                         return <FieldsetRecipeData

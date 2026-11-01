@@ -11,9 +11,10 @@ import {
   getPhotos,
   addTagsToPhotos,
   getUniqueTags,
-  deletePhotoRecipeGlobally,
+  getPhotoRecipeFieldsForTitle,
+  updateRecipeTitleForPhoto,
   renamePhotoRecipeGlobally,
-  getPhotosNeedingRecipeTitleCount,
+  getRecipeRenameCount,
   getRecipeDataForTitle,
   updateColorDataForPhoto,
   getColorDataForPhotos,
@@ -55,7 +56,9 @@ import {
   convertFormDataToPhotoDbInsertAndLookupRecipeTitle,
   deletePhotoAndFiles,
   extractImageDataFromBlobPath,
+  getAutoRecipeTitle,
   propagateRecipeTitleIfNecessary,
+  shouldPreserveRecipeTitle,
 } from './server';
 import { TAG_FAVS, Tags, isPhotoFav, isTagFavs } from '@/tag';
 import { convertPhotoToPhotoDbInsert, Photo, PhotoDbInsert } from '.';
@@ -103,6 +106,8 @@ import { isOmSystemCamera }
   from '@/platforms/om-system/recipe';
 
 import { isOmRecipeData, parseRecipeData } from '@/recipe/serialization';
+import { createRecipeHashKey } from '@/recipe/server';
+import { parameterize } from '@/utility/string';
 
 // Private actions
 
@@ -116,6 +121,10 @@ export const createPhotoAction = async (
     const photo =
       await convertFormDataToPhotoDbInsertAndLookupRecipeTitle(formData);
 
+    // Title the photo would have been given without user input
+    const previousRecipeTitle =
+      await getAutoRecipeTitle(photo.recipeData, photo.film);
+
     const albumTitles = getAlbumTitlesFromFormData(formData);
 
     const updatedUrl = await convertUploadToPhoto({
@@ -127,7 +136,11 @@ export const createPhotoAction = async (
       photo.url = updatedUrl;
       await insertPhoto(photo);
       await addAlbumTitlesToPhoto(albumTitles, photo.id, false);
-      await propagateRecipeTitleIfNecessary(formData, photo);
+      await propagateRecipeTitleIfNecessary(
+        formData,
+        photo,
+        previousRecipeTitle,
+      );
       revalidateAllKeysAndPaths();
       redirect(redirectPath);
     }
@@ -344,6 +357,9 @@ export const updatePhotoAction = async (
     const photo =
       await convertFormDataToPhotoDbInsertAndLookupRecipeTitle(formData);
 
+    const previousRecipeTitle = await getPhoto(photo.id, true)
+      .then(existingPhoto => existingPhoto?.recipeTitle);
+
     const albumTitles = getAlbumTitlesFromFormData(formData);
     await addAlbumTitlesToPhoto(albumTitles, photo.id);
    
@@ -364,7 +380,11 @@ export const updatePhotoAction = async (
         if (urlToDelete) {
           await deleteFile(urlToDelete);
         }
-        await propagateRecipeTitleIfNecessary(formData, photo);
+        await propagateRecipeTitleIfNecessary(
+          formData,
+          photo,
+          previousRecipeTitle,
+        );
       });
 
     revalidateAllKeysAndPaths();
@@ -457,17 +477,23 @@ export const upgradeTagToAlbumAction = async (tag: string) =>
     upgradeTagToAlbum(tag).then(revalidateAllKeysAndPaths),
   );
 
-export const getPhotosNeedingRecipeTitleCountAction = async (
-  recipeData: string,
-  film: string,
-  photoIdToExclude?: string,
+export const getRecipeRenameCountAction = async (
+  ...args: Parameters<typeof getRecipeRenameCount>
+) =>
+  runAuthenticatedAdminServerAction(async () => {
+    const [{ title, ...rename }] = args;
+    return await getRecipeRenameCount({
+      ...rename,
+      title: parameterize(title),
+    });
+  });
+
+export const getRecipeHashKeyAction = async (
+  recipeData?: string,
+  film?: string,
 ) =>
   runAuthenticatedAdminServerAction(async () =>
-    await getPhotosNeedingRecipeTitleCount(
-      recipeData,
-      film,
-      photoIdToExclude,
-    ),
+    createRecipeHashKey(recipeData, film),
   );
 
 export const getRecipeDataForTitleAction = async (recipeTitle: string) =>
@@ -526,7 +552,14 @@ export const deletePhotoRecipeGloballyAction = async (formData: FormData) =>
   runAuthenticatedAdminServerAction(async () => {
     const recipe = formData.get('recipe') as string;
 
-    await deletePhotoRecipeGlobally(recipe);
+    // Photos fall back to generated titles
+    const photos = await getPhotoRecipeFieldsForTitle(recipe);
+    for (const { id, recipe_data, film } of photos) {
+      await updateRecipeTitleForPhoto(id, createRecipeHashKey(
+        recipe_data ?? undefined,
+        film ?? undefined,
+      ));
+    }
 
     revalidatePhotosKey();
     revalidateAdminPaths();
@@ -581,7 +614,13 @@ export const replacePhotoStorageAction = async (
           isOmRecipeData(photo.recipeData) ||
           isOmRecipeData(parseRecipeData(photoDbInsert.recipeData))) && {
           recipeData: photoDbInsert.recipeData,
-          recipeTitle: photoDbInsert.recipeTitle || undefined,
+          recipeTitle: shouldPreserveRecipeTitle(
+            photo.recipeTitle,
+            photo,
+            photoDbInsert,
+          )
+            ? photo.recipeTitle
+            : photoDbInsert.recipeTitle || undefined,
         },
       };
 
@@ -698,10 +737,18 @@ export const syncPhotoAction = async (
         const formDataFromPhoto = convertPhotoToFormData(photo);
 
         Object.entries(formDataFromExif).forEach(([field, value]) => {
+          if (field === 'recipeTitle' && shouldPreserveRecipeTitle(
+            photo.recipeTitle,
+            photo,
+            formDataFromExif,
+          )) {
+            delete formDataFromExif.recipeTitle;
+            return;
+          }
           if ((isOmSystemCamera(photo.make) ||
             isOmRecipeData(parseRecipeData(formDataFromExif.recipeData))) &&
             (field === 'recipeData' || field === 'recipeTitle')) {
-            // OM settings are extracted facts, without manual overrides.
+            // OM settings always reflect the current source image
             return;
           }
           const existingValue =

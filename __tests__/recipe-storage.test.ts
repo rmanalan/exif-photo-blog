@@ -11,6 +11,7 @@ import {
   parseRecipeData,
 } from '@/recipe/serialization';
 import { OmRecipe } from '@/platforms/om-system/recipe';
+import { photoNeedsToBeUpdated } from '@/photo/update';
 
 const recipe: OmRecipe = {
   version: 1, kind: 'color', colors: Array(12).fill(0),
@@ -73,6 +74,23 @@ it.each(['invalid json', 'null', '[]', '{"camera":"unknown"}'])(
     expect(parseRecipeData(data)).toBeUndefined();
   },
 );
+
+it.each([
+  ['unchecked OM photos', 'OM Digital Solutions', undefined, true],
+  ['OM photos checked by an older parser', 'OLYMPUS CORPORATION',
+    { ...createOmRecipeData(recipe), checkedVersion: 0 }, true],
+  ['OM photos with a recipe', 'OM Digital Solutions',
+    createOmRecipeData(recipe), false],
+  ['OM photos checked without a recipe', 'OM Digital Solutions',
+    createOmRecipeData(), false],
+  ['other cameras', 'NIKON CORPORATION', undefined, false],
+])('sync status for %s', (_, make, data, isMissing) => {
+  const photo = parsePhotoFromDb({
+    ...base, make, ...data && { recipeData: JSON.stringify(data) },
+  });
+  expect(photo.updateStatus?.isMissingOmRecipe).toBe(isMissing);
+  expect(Boolean(photoNeedsToBeUpdated(photo))).toBe(isMissing);
+});
 
 it('rejects an incomplete OM profile without treating it as Fujifilm', () => {
   const data = parseRecipeData({

@@ -65,6 +65,7 @@ import PhotoOmRecipe from '@/platforms/om-system/PhotoOmRecipe';
 import OmRecipeOverlay from '@/platforms/om-system/OmRecipeOverlay';
 import useMediaQuery from '@/utility/useMediaQuery';
 import { getFujifilmRecipe, getOmRecipe } from '@/recipe/serialization';
+import { recipeTitleForDisplay } from '@/recipe/key';
 import PhotoColorBar from './color/PhotoColorBar';
 
 export default function PhotoLarge({
@@ -200,7 +201,7 @@ export default function PhotoLarge({
 
   const camera = cameraFromPhoto(photo);
   const lens = lensFromPhoto(photo);
-  const { recipeTitle } = photo;
+  const recipeTitle = recipeTitleForDisplay(photo.recipeTitle);
 
   const showExifContent = shouldShowExifDataForPhoto(photo);
 
@@ -302,7 +303,7 @@ export default function PhotoLarge({
             photo.film &&
               <PhotoRecipeOverlay
                 ref={refRecipe}
-                title={photo.recipeTitle}
+                title={recipeTitle}
                 data={fujifilmRecipe}
                 film={photo.film}
                 iso={photo.isoFormatted}
@@ -533,7 +534,7 @@ export default function PhotoLarge({
                         film={photo.film}
                         make={photo.make}
                         prefetch={prefetchRelatedLinks}
-                        {...fujifilmRecipe && !photo.recipeTitle && {
+                        {...fujifilmRecipe && !recipeTitle && {
                           toggleRecipeOverlay,
                           isShowingRecipeOverlay,
                         }}

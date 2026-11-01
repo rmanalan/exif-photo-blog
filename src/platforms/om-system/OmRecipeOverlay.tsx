@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { Camera, formatCameraText } from '@/camera';
 import { pathForRecipe } from '@/app/path';
 import { clsx } from 'clsx/lite';
-import { labelForOmRecipe, OmRecipe } from './recipe';
+import { labelForOmRecipeTitle, OmRecipe } from './recipe';
 import OmRecipeSettings from './OmRecipeSettings';
 
 export default function OmRecipeOverlay({
@@ -50,7 +50,7 @@ export default function OmRecipeOverlay({
     <TbChecklist size={17} className="shrink-0 opacity-80" />
     <Link href={pathForRecipe(recipeKey)} onClick={onClose}
       className="truncate tracking-wide hover:opacity-50 active:opacity-75">
-      {labelForOmRecipe(recipe.kind)}
+      {labelForOmRecipeTitle(recipeKey)}
     </Link>
   </h2>;
   const description = <p id={descriptionId} className="text-xs text-black/50">

@@ -1,7 +1,11 @@
 import sharp from 'sharp';
 import piexif from 'piexifjs';
 import { replacePhotoStorageAction, syncPhotoAction } from '@/photo/actions';
-import { getPhoto, updatePhoto } from '@/photo/query';
+import {
+  getCustomRecipeTitleForData,
+  getPhoto,
+  updatePhoto,
+} from '@/photo/query';
 import { parsePhotoFromDb } from '@/photo';
 import { fetchUrlWithByteLimit } from '@/utility/fetch';
 import {
@@ -27,6 +31,7 @@ jest.mock('../src/app/config', () => ({
 jest.mock('../src/photo/query', () => ({
   getPhoto: jest.fn(), updatePhoto: jest.fn().mockResolvedValue(undefined),
   getUniqueTags: jest.fn().mockResolvedValue([]),
+  getCustomRecipeTitleForData: jest.fn(),
 }));
 jest.mock('../src/photo/cache', () => ({ revalidatePhoto: jest.fn() }));
 jest.mock('../src/cache', () => ({ revalidateAllKeysAndPaths: jest.fn() }));
@@ -194,6 +199,41 @@ it.each(['auto', 'only-missing', 'overwrite'] as const)(
     expect(parseRecipeData(photo.recipeData)?.camera).toBe('om-system');
   },
 );
+
+it('uses a custom title from matching photos during Sync', async () => {
+  jest.mocked(getCustomRecipeTitleForData)
+    .mockResolvedValueOnce('night-mono');
+  await syncPhotoAction('penphoto', { syncMode: 'overwrite' });
+  const [photo] = jest.mocked(updatePhoto).mock.calls[0];
+  expect(photo.recipeTitle).toBe('night-mono');
+  expect(getCustomRecipeTitleForData).toHaveBeenCalledWith(
+    JSON.stringify(createOmRecipeData(mono)), undefined,
+  );
+});
+
+it.each(['auto', 'overwrite'] as const)(
+  'keeps a custom title for an unchanged recipe during %s Sync',
+  async syncMode => {
+    const original = await getPhoto('penphoto');
+    jest.mocked(getPhoto).mockResolvedValue({
+      ...original!, recipeTitle: 'street-color',
+    });
+    jest.mocked(getOmRecipeFromMakerNote).mockReturnValue(color);
+    await syncPhotoAction('penphoto', { syncMode });
+    const [photo] = jest.mocked(updatePhoto).mock.calls[0];
+    expect(photo.recipeTitle).toBe('street-color');
+  },
+);
+
+it('replaces a custom title when the recipe changes during Sync', async () => {
+  const original = await getPhoto('penphoto');
+  jest.mocked(getPhoto).mockResolvedValue({
+    ...original!, recipeTitle: 'street-color',
+  });
+  await syncPhotoAction('penphoto');
+  const [photo] = jest.mocked(updatePhoto).mock.calls[0];
+  expect(photo.recipeTitle).toBe(createOmRecipeKey(mono));
+});
 
 it.each([
   ['OM Digital Solutions', 'OM-3'],
