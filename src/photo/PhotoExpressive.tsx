@@ -340,7 +340,6 @@ export default function PhotoExpressive({
             ref={refRecipe}
             recipe={omRecipe}
             recipeKey={recipeTitle}
-            camera={{ make: photo.make, model: photo.model }}
             onClose={hideRecipeOverlay}
           />}
         </AnimatePresence>
@@ -494,7 +493,6 @@ export default function PhotoExpressive({
                     ref={refPhotoRecipe}
                     recipe={omRecipe}
                     recipeKey={recipeTitle}
-                    camera={{ make: photo.make, model: photo.model }}
                     contrast="medium"
                     prefetch={prefetchRelatedLinks}
                     toggleRecipeOverlay={toggleRecipeOverlay}

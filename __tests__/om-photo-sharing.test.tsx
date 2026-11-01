@@ -101,7 +101,7 @@ it.each([
 });
 
 it.each(['photo', 'expressive', 'gallery', 'selected gallery'] as const)(
-  'passes the source camera to the %s recipe dialog', async source => {
+  'opens the %s recipe dialog', async source => {
     const photo = { ...basePhoto, make: 'OLYMPUS CORPORATION', model: 'E-P7',
       recipeData: createOmRecipeData(profile) };
     const firstPhoto = { ...photo, id: 'firstone',
@@ -120,10 +120,8 @@ it.each(['photo', 'expressive', 'gallery', 'selected gallery'] as const)(
     fireEvent.click(screen.getByRole('button', {
       name: 'Show color recipe settings',
     }));
-    expect(screen.getByText(source === 'gallery'
-      ? 'OM Digital Solutions PEN · Settings used for this photo'
-      : 'OLYMPUS CORPORATION E-P7 · Settings used for this photo'))
-      .toBeDefined();
+    expect(screen.getByRole('dialog', { name: 'Color Recipe' })).toBeDefined();
+    expect(screen.queryByText(/Settings used for this photo/)).toBeNull();
     if (source === 'photo' || source === 'expressive') {
       const toggle = screen.getByRole('button', {
         name: 'Hide color recipe settings',

@@ -33,8 +33,7 @@ it('keeps gallery navigation separate and restores page shortcuts on close',
     jest.mocked(useAppState).mockReturnValue({
       setShouldRespondToKeyboardCommands: setKeyboardCommands,
     });
-    render(<PhotoOmRecipe recipe={recipe} recipeKey={key}
-      camera={{ make: 'OM Digital Solutions', model: 'PEN' }} />);
+    render(<PhotoOmRecipe recipe={recipe} recipeKey={key} />);
     expect(screen.getByRole('link', { name: 'Color Recipe' })
       .getAttribute('href')).toBe(`/recipe/${key}`);
     const trigger = screen.getByRole('button', {
@@ -48,9 +47,7 @@ it('keeps gallery navigation separate and restores page shortcuts on close',
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
     expect(trigger.querySelector('svg')?.classList.contains('rotate-45'))
       .toBe(true);
-    expect(screen.getByText(
-      'OM Digital Solutions PEN · Settings used for this photo',
-    )).toBeDefined();
+    expect(dialog).toHaveAccessibleName('Color Recipe');
     expect(setKeyboardCommands).toHaveBeenLastCalledWith(false);
     expect(dialog.querySelectorAll('input')).toHaveLength(0);
     fireEvent.click(screen.getByRole('tab', { name: 'White balance' }));
@@ -73,30 +70,13 @@ it('keeps gallery navigation separate and restores page shortcuts on close',
     window.removeEventListener('keydown', pageKeydown);
   });
 
-it.each([
-  { make: 'OM Digital Solutions   ', model: 'OM-3   ',
-    label: 'OM-3' },
-  { make: 'OLYMPUS IMAGING CORP.', model: 'PEN-F',
-    label: 'OLYMPUS IMAGING CORP. PEN-F' },
-  { make: 'OLYMPUS CORPORATION', model: 'E-P7',
-    label: 'OLYMPUS CORPORATION E-P7' },
-  { make: undefined, model: 'E-P7', label: 'E-P7' },
-])('shows the source camera $label in the dialog', ({ make, model, label }) => {
-  render(<PhotoOmRecipe recipe={recipe} recipeKey={key}
-    camera={{ make, model }} />);
-  fireEvent.click(screen.getByRole('button', {
-    name: 'Show color recipe settings',
-  }));
-  expect(screen.getByText(`${label} · Settings used for this photo`))
-    .toBeDefined();
-});
-
-it('omits a camera label when EXIF camera fields are missing', () => {
-  render(<PhotoOmRecipe recipe={recipe} recipeKey={key} />);
-  fireEvent.click(screen.getByRole('button', {
-    name: 'Show color recipe settings',
-  }));
-  expect(screen.getByText('Settings used for this photo')).toBeDefined();
+it('renders settings as grid cells without panel headings', () => {
+  render(<OmRecipeSettings recipe={recipe} />);
+  expect(screen.queryByRole('heading')).toBeNull();
+  expect(screen.getByText('Orange-red')).toBeDefined();
+  fireEvent.click(screen.getByRole('tab', { name: 'White balance' }));
+  expect(screen.getByText('A2 · M3')).toBeDefined();
+  expect(screen.getByText('Shading')).toBeDefined();
 });
 
 it('uses the modal on phones without also toggling the photo overlay', () => {

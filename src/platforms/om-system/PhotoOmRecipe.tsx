@@ -9,7 +9,6 @@ import { pathForRecipe } from '@/app/path';
 import { labelForOmRecipeTitle, OmRecipe } from './recipe';
 import OmRecipeOverlay from './OmRecipeOverlay';
 import { useAppState } from '@/app/AppState';
-import { Camera } from '@/camera';
 import PhotoRecipeOverlayButton from '@/recipe/PhotoRecipeOverlayButton';
 import { clsx } from 'clsx/lite';
 import useMediaQuery from '@/utility/useMediaQuery';
@@ -18,7 +17,6 @@ export default function PhotoOmRecipe({
   ref,
   recipe,
   recipeKey,
-  camera,
   toggleRecipeOverlay,
   isShowingRecipeOverlay,
   ...props
@@ -26,7 +24,6 @@ export default function PhotoOmRecipe({
   ref?: RefObject<HTMLDivElement | null>
   recipe: OmRecipe
   recipeKey: string
-  camera?: Partial<Camera>
   toggleRecipeOverlay?: () => void
   isShowingRecipeOverlay?: boolean
 } & EntityLinkExternalProps) {
@@ -66,12 +63,14 @@ export default function PhotoOmRecipe({
       <Dialog.Overlay
         className="fixed inset-0 z-50 bg-white/90 dark:bg-black/80" />
       <Dialog.Content onEscapeKeyDown={event => event.stopPropagation()}
+        aria-describedby={undefined}
         className={clsx(
-          'fixed left-1/2 top-1/2 z-[60] w-[calc(100vw-2rem)] max-w-sm',
+          'fixed left-1/2 top-1/2 z-[60] max-w-[calc(100vw-2rem)]',
           '-translate-x-1/2 -translate-y-1/2 outline-none',
         )}>
+        <Dialog.Title className="sr-only">{label}</Dialog.Title>
         <OmRecipeOverlay recipe={recipe} recipeKey={recipeKey}
-          camera={camera} onClose={() => setModalOpen(false)}
+          onClose={() => setModalOpen(false)}
           isOnPhoto={false} />
       </Dialog.Content>
     </Dialog.Portal>}

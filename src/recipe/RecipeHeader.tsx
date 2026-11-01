@@ -50,7 +50,6 @@ export default function RecipeHeader({
       entity={omRecipe ? <PhotoOmRecipe
         recipe={omRecipe}
         recipeKey={recipe}
-        camera={{ make: omPhoto?.make, model: omPhoto?.model }}
         contrast="high"
         hoverType="none"
         hoverCount={count}

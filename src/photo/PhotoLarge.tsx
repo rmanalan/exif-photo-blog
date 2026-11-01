@@ -315,7 +315,6 @@ export default function PhotoLarge({
             ref={refRecipe}
             recipe={omRecipe}
             recipeKey={photo.recipeTitle}
-            camera={{ make: photo.make, model: photo.model }}
             onClose={hideRecipeOverlay}
           />}
         </AnimatePresence>
@@ -462,7 +461,6 @@ export default function PhotoLarge({
                         ref={refPhotoRecipe}
                         recipe={omRecipe}
                         recipeKey={photo.recipeTitle}
-                        camera={{ make: photo.make, model: photo.model }}
                         contrast="medium"
                         prefetch={prefetchRelatedLinks}
                         toggleRecipeOverlay={toggleRecipeOverlay}
